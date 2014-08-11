@@ -21,6 +21,7 @@ angular.module("angular-websql", []).factory("$webSql", ["$q",
                         deferred.resolve(results);
                     },function(tx,results){
                         console.error(query);
+                        console.error(values);
                         console.error(results);
                         deferred.reject(results);
                     }
@@ -94,24 +95,97 @@ angular.module("angular-websql", []).factory("$webSql", ["$q",
               whereClause: function(b) {
                 var a = "",
                 v = [];
-                for (var c in b) {
-                    if(b[c]["value"]){
-                        b[c]["value"] = String(b[c]["value"]);
+                if(angular.isArray(b)){
+                    for(var i=0;i!=b.length;i++){
+                        var condition = b[i];
+                        if(condition.union){
+                            a+=condition.union;
+                        }
+                        else if(i!==0){
+                            a+=" AND ";
+                        }
+                        a+="`" + condition.column + "` ";
+                        if(condition.operator){
+                            a+=condition.operator;
+                        }
+                        else{
+                            a+="=";
+                        }
+                        if(angular.isArray(condition.value)){
+                            a+="(";
+                            for(var j=0;j!=condition.value.length;j++){
+                                if(j!==0){
+                                    a+=',?';
+                                }
+                                else{
+                                    a+='?';
+                                }
+                                v.push(condition.value[j]);
+                            }
+                            a+=")";
+
+                        }
+                        else{
+                            var value = String(condition.value);
+                            if(value.match(/NULL/ig)){
+                                a+="NULL";
+                            }
+                            else{
+                                a+="?";
+                                v.push(value);
+                            }
+                        }
+                        
                     }
-                  if(typeof b[c] !== "undefined" && typeof b[c] !== "object" && typeof b[c] === "string" && !b[c].match(/NULL/ig)) v.push(b[c]);
-                  else if(typeof b[c] !== "undefined" && typeof b[c] !== "object" && typeof b[c] === "number") v.push(b[c]);
-                  else if(typeof b[c]["value"] !== "undefined" && typeof b[c] === "object" && !b[c]["value"].match(/NULL/ig)) v.push(b[c]["value"]);
-                  a += (typeof b[c] === "object") ? 
-                          (typeof b[c]["union"] === "undefined") ? 
-                            (typeof b[c]["value"] === "string" && b[c]["value"].match(/NULL/ig)) ? 
-                              "`" + c + "` " + b[c]["value"] : 
-                              "`" + c + "` " + b[c]["operator"] + " ? " : 
-                            (typeof b[c]["value"] === "string" && b[c]["value"].match(/NULL/ig)) ? 
-                              "`" + c + "` " + b[c]["value"] + " " + b[c]["union"] + " " : 
-                              "`" + c + "` " + b[c]["operator"] + " ? " + b[c]["union"] + " " : 
-                          (typeof b[c] === "string" && b[c].match(/NULL/ig)) ? 
-                            "`" + c + "` " + b[c] : 
-                            "`" + c + "`=?"
+                }
+                else{
+                    for (var c in b) {
+                        if(b[c]["value"]){
+                            b[c]["value"] = String(b[c]["value"]);
+                        }
+                        if(typeof b[c] !== "undefined" && typeof b[c] !== "object" && typeof b[c] === "string" && !b[c].match(/NULL/ig)) v.push(b[c]);
+                        else if(typeof b[c] !== "undefined" && typeof b[c] !== "object" && typeof b[c] === "number") v.push(b[c]);
+                        else if(typeof b[c]["value"] !== "undefined" && typeof b[c] === "object" && !b[c]["value"].match(/NULL/ig)) v.push(b[c]["value"]);
+                        if(typeof b[c] === "object"){
+                            if(typeof b[c]["union"] === "undefined"){
+                                if(typeof b[c]["value"] === "string" && b[c]["value"].match(/NULL/ig)){
+                                    a+="`" + c + "` " + b[c]["value"];
+                                }
+                                else{
+                                    a+="`" + c + "` " + b[c]["operator"] + " ? ";
+                                }
+                            }
+                            else{
+                                if(typeof b[c]["value"] === "string" && b[c]["value"].match(/NULL/ig)){
+                                    a+="`" + c + "` " + b[c]["value"] + " " + b[c]["union"] + " ";
+                                }
+                                else{
+                                    a+="`" + c + "` " + b[c]["operator"] + " ? " + b[c]["union"] + " ";
+                                }
+                            }
+                        }
+                        else{
+                            if(typeof b[c] === "string" && b[c].match(/NULL/ig)){
+                                a+="`" + c + "` " + b[c];
+                            }
+                            else{
+                                a+="`" + c + "`=?";
+                            }
+                        }
+                        /*
+                           a += (typeof b[c] === "object") ? 
+                           (typeof b[c]["union"] === "undefined") ? 
+                           (typeof b[c]["value"] === "string" && b[c]["value"].match(/NULL/ig)) ? 
+                           "`" + c + "` " + b[c]["value"] : 
+                           "`" + c + "` " + b[c]["operator"] + " ? " : 
+                           (typeof b[c]["value"] === "string" && b[c]["value"].match(/NULL/ig)) ? 
+                           "`" + c + "` " + b[c]["value"] + " " + b[c]["union"] + " " : 
+                           "`" + c + "` " + b[c]["operator"] + " ? " + b[c]["union"] + " " : 
+                           (typeof b[c] === "string" && b[c].match(/NULL/ig)) ? 
+                           "`" + c + "` " + b[c] : 
+                           "`" + c + "`=?"
+                           */
+                    }
                 }
                 return {w:a,p:v};
               },
