@@ -3,7 +3,7 @@ var uglify = require('gulp-uglify');
 
 gulp.task('compress', function() {
       gulp.src('src/*.js')
-          .pipe(uglify())
+          .pipe(uglify({"mangle":false}))
               .pipe(gulp.dest('dist'))
 });
 
