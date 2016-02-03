@@ -4,8 +4,8 @@
  * © MIT License
  */
 "use strict";
-angular.module("angular-websql", []).factory("$webSql", ["$q",
-    function($q) {
+angular.module("angular-websql", []).factory("$webSql", [
+    function() {
       return {
         openDatabase: function(dbName, version, desc, size) {
           try {
@@ -14,7 +14,7 @@ angular.module("angular-websql", []).factory("$webSql", ["$q",
               throw "Browser does not support web sql";
             return {
               executeQuery: function(query, values) {
-                  var deferred = $q.defer();
+                  var deferred = Q.defer();
                 db.transaction(function(tx) {
                     try{
                     tx.executeSql(query, values, function(tx, results) {
